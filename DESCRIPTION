@@ -9,5 +9,5 @@ Maintainer: Koji Tominaga <koji.tominaga@ibv.uio.no>
 Depends: R (>= 3.0.2), flaker (>= 0.0.1), oce
 Description: Utility functions for using results from flaker
 License: GPL (>= 2)
-URL: http://www.r-project.org, http://www.another.url
-BugReports: http://pkgname.bugtracker.url
+URL: https://github.com/kojitominaga/flakeutil
+BugReports: https://github.com/kojitominaga/flakeutil/issues
