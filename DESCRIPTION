@@ -1,5 +1,5 @@
 Package: flakeutil
-Version: 0.2.0
+Version: 0.2.1
 Date: 2013-10-23
 Title: Utilties for the R-wrapper for FLake
 Authors@R: c(person("Koji", "Tominaga", role = c("aut", "cre"),
