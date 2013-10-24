@@ -463,7 +463,7 @@ LAIndices <- function(flakeresult, parameters, bthA, bthD) {
   if (length(bthD) != length(bthA)) stop('bthA and D must have the same length')
   if (max(bthD) != parameters[['depth_w']]) stop('max(bthD) must be the depth')
   if (min(bthD) != 0) stop('min(bthD) must be zero')
-  if (rev(bthD)[1] != 0) stop('lake bottom must have zero area')
+  if (rev(bthA)[1] != 0) stop('lake bottom must have zero area')
   cat('This function uses rLakeAnalyzer functions.')
   cat('See the documentation for this function')
   cat('and references for rLakeAnalyzer')
