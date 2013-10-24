@@ -461,7 +461,7 @@ HourlyAirTemperature <- function(d, lat, lon,
 LAIndices <- function(flakeresult, parameters, bthA, bthD) {
   require(rLakeAnalyzer)
   if (length(bthD) != length(bthA)) stop('bthA and D must have the same length')
-  if (max(bthD) != parameters[['depth']]) stop('max(bthD) must be the depth')
+  if (max(bthD) != parameters[['depth_w']]) stop('max(bthD) must be the depth')
   if (min(bthD) != 0) stop('min(bthD) must be zero')
   if (rev(bthD)[1] != 0) stop('lake bottom must have zero area')
   cat('This function uses rLakeAnalyzer functions.')
