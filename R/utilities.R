@@ -1,4 +1,4 @@
-PlotSolarRadiation <- function(flakeresult, ...) {
+PlotSolarRadiation <- function(flakeresult) {
   Iatm <- flakeresult[['I_atm_flk_out']]
   Isnow <- flakeresult[['I_snow_flk_out']]
   Iice <- flakeresult[['I_ice_flk_out']]
