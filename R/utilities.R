@@ -483,7 +483,8 @@ LAIndices <- function(flakeresult, parameters, bthA, bthD) {
   for (ti in 1:nrow(flakeresult)) {
     ed[ti] <- layer.density(0, md[1, ti], tzm[ti, ] - 273.15,
                             depths, bthA, depths)
-    hd[ti] <- layer.density(md[2, ti], ld, tzm[ti, ] - 273.15,
+    hd[ti] <- layer.density(md[2, ti],
+                            parameters[['depth_w'], tzm[ti, ] - 273.15,
                             depths, bthA, depths)
   }
   cat('... calculating u*, friction velocity\n')
