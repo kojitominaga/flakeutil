@@ -458,4 +458,49 @@ HourlyAirTemperature <- function(d, lat, lon,
   return(T)
 }
 
+LAIndices <- function(flakeresult, parameters, bthA, bthD) {
+  require(rLakeAnalyzer)
+  if (length(bthD) != length(bthA)) stop('bthA and D must have the same length')
+  if (max(bthD) != parameters[['depth']]) stop('max(bthD) must be the depth')
+  if (min(bthD) != 0) stop('min(bthD) must be zero')
+  if (rev(bthD)[1] != 0) stop('lake bottom must have zero area')
+  cat('This function uses rLakeAnalyzer functions.')
+  cat('See the documentation for this function')
+  cat('and references for rLakeAnalyzer')
+  depths <- bthD
+  cat('... calculating temperature at depths')
+  tzm <- TemperatureAtDepths(data.frame(flakeresult), parameters, depths)
+  cat('... calculating depth broundaries for metalimnion')
+  md <- apply(tzm - 273.15, 1, function(x) meta.depths(x, depths))
+  cat('... calculating thermocline depth')
+  td <- apply(tzm - 273.15, 1, function(x) thermo.depth(x, depths))
+  cat("... calculating Schmidt's stability")
+  ss <- apply(tzm - 273.15, 1,
+              function(x) schmidt.stability(x, depths, bthA, depths))
+  cat('... calculating mean densities for epi- and hypolimnion') 
+  ed <- numeric()
+  hd <- numeric()
+  for (ti in 1:nrow(flakeresult)) {
+    ed[ti] <- layer.density(0, md[1, ti], tzm[ti, ] - 273.15,
+                            depths, bthA, depths)
+    hd[ti] <- layer.density(md[2, ti], ld, tzm[ti, ] - 273.15,
+                            depths, bthA, depths)
+  }
+  cat('... calculating u*, friction velocity')
+  us <- numeric()
+  uain <- data.frame(flakeresult)[['U_a_in']]
+  for (ti in 1:nrow(flakeresult)) {
+    us[ti] <- uStar(uain[ti], 10, ed[ti]) 
+  }
+  cat('... calculating lake number')
+  ln <- lake.number(bthA, depths, us, ss, md[1, ], md[2, ], hd)
+  cat('... calculating Wedderburn number')
+  wn <- wedderburn.number(hd - ed, md[1, ], us, bthA[1], hd)
+  out <- data.frame(ThermoclineDepth = td,
+                    MixedLayerDepth = md[1, ],
+                    SchmidtStability = ss,
+                    WedderburnNumber = wn,
+                    LakeNumber = ln)
+}
   
+

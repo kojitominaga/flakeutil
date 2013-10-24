@@ -3,12 +3,14 @@ export(fullnames,
        FractionalRadiation,
        TemperatureAtDepth,
        TemperatureAtDepths,
-       HourlyAirTemperature
+       HourlyAirTemperature,
+       LAIndices
        )
 
 
 # Import all packages listed as Imports or Depends
 import(
   flaker,
-  oce
+  oce,
+  rLakeAnalyzer
 )
