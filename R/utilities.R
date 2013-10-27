@@ -206,6 +206,7 @@ TemperatureAtDepths <- function(flakeresult, parameters, z) {
 HourlyAirTemperature <- function(d, lat, lon,
                                  startT, minT, maxT, meanT, minTn, maxTn,
                                  n = 24) {
+  !! TODO (see commit details on 2013-10-27)
   require(oce)
   threshold <- ifelse(meanT < 273, 0.38, 0.30)
   if (!(n = 24)) {
