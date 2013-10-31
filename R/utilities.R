@@ -130,9 +130,10 @@ FractionalRadiation <- function(d, lat, lon, n = 24) {
                    / 180 * pi)
   ## below fixes for the polar winter without sun
   if (sum(intensity) == 0) {
-    intensity <- rep(1 / length(intensity), times = length(intensity))
+    fraction <- rep(1 / length(intensity), times = length(intensity))
+  } else {
+    fraction <- intensity / sum(intensity)
   }
-  fraction <- intensity / sum(intensity)
   return(fraction)
 }
 
@@ -229,237 +230,241 @@ HourlyAirTemperature <- function(d, lat, lon,
                      length.out = n)
   intensity <- sin(pmax(sunAngle(middletimes, lat, lon)[['altitude']], 0)
                    / 180 * pi)
-  sunupi <- min(which(intensity > 0))
-  timestart <- 0 # hour
-  timeminT <- 0.5 + 24 / n * (sunupi - 1) + 1
-  ## hour, an hour later first middle time
-  timemaxT <- 14 + 24 / n / 2
-  ## hour, the middle time after 14:00
-  mt <- seq(from = 24 / n / 2,
-            to = 24 - 24 / n / 2,
-            length.out = n)
-  if (abs(maxT - minTn) <= 0.5) {
-    if (startT < minT) {
-      ## print('case 1.1')
-      ## temperature increased throughout the 24 hours, probably.
-      ## assume triangle shape at 12:30
-      noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
-      for (tsi in 1:(n / 2)){
-        T[tsi] <- minT + (noonT - minT) * (mt[tsi] - 1) / 11.5
-      }
-      for (tsi in (n / 2 + 1):n) {
-        T[tsi] <- noonT + (maxT - noonT) * (mt[tsi] - 12.5) / 11.5
-      }
-      ## adjustment at the middle 12 hours
-      T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
-    } else {
-      ## print('case 1.2')
-      ## temperature goes down first and then up (end increasing)
-      tsl1 <- mt <= timeminT
-      tsii1 <- c(1:n)[tsl1]
-      for (tsi in tsii1) {
-        T[tsi] <- startT + (startT - minT) * sin(pi / 4) / (1 - sin(pi / 4)) -
-          sin(mt[tsi] / timeminT * (pi / 4) + pi / 4) *
-            (startT - minT) / (1 - sin(pi / 4))
-      }
-      rest <- meanT * n - sum(T)
-      ## let x be noonT (unknown) minus minT
-      ## then fx(time), gx(time) are scaling functions s.t.
-      ## fx * x + gx * (maxT - x - minT) +  minT = T
-      fx <- numeric()
-      gx <- numeric()
-      for (tsi in tsii1) {
-        ## zero because it's already taken into account befor calculating rest
-        fx[tsi] <- 0
-        gx[tsi] <- 0
-      }
-      tsl2 <- (!tsl1) & (mt < 12)
-      tsii2 <- c(1:n)[tsl2]
-      for (tsi in tsii2) {
-        fx[tsi] <- 1 +
-          sin((mt[tsi] - timeminT) / (12 - timeminT) * pi / 2 - pi / 2)
-        gx[tsi] <- 0
-      }
-      tsl3 <- (!tsl1) & (!tsl2)
-      tsii3 <- c(1:n)[tsl3]
-      for (tsi in tsii3) {
-        fx[tsi] <- 1
-        gx[tsi] <- (mt[tsi] - 12) / 11.5
-      }
-      ## now
-      ## sum(fx) * x + sum(gx) * (maxT - x - minT) + minT * sum(tsl2 | tsl3)
-      ##  == rest
-      x <- (rest - minT * sum(tsl2 | tsl3) - sum(gx) * (maxT - minT)) /
-        (sum(fx) - sum(gx))
-      for (tsi in tsii2) {
-        T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
-      }
-      for (tsi in tsii3) {
-        T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
-      }
-    }
-  } else if (abs(minT - maxTn) <= 0.5) {
-    if (startT > maxT) {
-      ## print('case 2.1')
-      ## temperature decreased throughout the 24 hours, probably.
-      ## assume triangle shape at 12:30
-      noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
-      for (tsi in 1:(n / 2)){
-        T[tsi] <- maxT - (maxT - noonT) * (mt[tsi] - 0.5) / 11.5
-      }
-      for (tsi in (n / 2 + 1):n) {
-        T[tsi] <- noonT - (noonT - minT) * (mt[tsi] - 12) / 11.5
-      }
-      ## adjustment at the middle 12 hours
-      T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
-    } else {
-      ## print('case 2.2')
-      ## temperature goes up first and then down (and decreasing)
-      ## assume timemaxT at 10:00 (need to make room to adjust in the afternoon)
-      timemaxT <- 10
-      tsl1 <- mt <= timemaxT
-      tsii1 <- c(1:n)[tsl1]
-      for (tsi in tsii1) {
-        T[tsi] <- startT + (maxT - startT) *
-          sin((mt[tsi] / timemaxT) * (pi / 2))
-      }
-      rest <- meanT * n - sum(T)
-      ## let x be T at 18:00 (unknown) minus minT
-      ## then fx(time), gx(time) are scaling functions s.t.
-      ## fx * x + gx * (maxT - x - minT) +  minT = T
-      fx <- numeric()
-      gx <- numeric()
-      for (tsi in tsii1) {
-        ## zero because it's already taken into account befor calculating rest
-        fx[tsi] <- 0
-        gx[tsi] <- 0
-      }
-      tsl2 <- (!tsl1) & (mt < 18)
-      tsii2 <- c(1:n)[tsl2]
-      for (tsi in tsii2) {
-        fx[tsi] <- 1 
-        gx[tsi] <- sin((mt[tsi] - timemaxT) / (18 - timemaxT) * (pi / 2) +
-                       pi / 2)
-      }
-      tsl3 <- (!tsl1) & (!tsl2)
-      tsii3 <- c(1:n)[tsl3]
-      for (tsi in tsii3) {
-        fx[tsi] <- 1 - (mt[tsi] - 18) / 5.5
-        gx[tsi] <- 0
-      }
-      ## now
-      ## sum(fx) * x + sum(gx) * (maxT - x - minT) + minT * sum(tsl2 | tsl3)
-      ##  == rest
-      x <- (rest - minT * sum(tsl2 | tsl3) - sum(gx) * (maxT - minT)) /
-        (sum(fx) - sum(gx))
-      for (tsi in tsii2) {
-        T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
-      }
-      for (tsi in tsii3) {
-        T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
-      }
-    }
+  if (all(intensity == 0)) {
+    T <- rep(meanT, times = n)
   } else {
-    if (((meanT - minT) / (maxT - minT)) < threshold) {
-      ## print('case 3.1.1')
-      ## temperature increased throughout the 24 hours, probably.
-      ## assume triangle shape at 12:30
-      noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
-      for (tsi in 1:(n / 2)){
-        T[tsi] <- minT + (noonT - minT) * (mt[tsi] - 1) / 11.5
-      }
-      for (tsi in (n / 2 + 1):n) {
-        T[tsi] <- noonT + (maxT - noonT) * (mt[tsi] - 12.5) / 11.5
-      }
-      ## adjustment at the middle 12 hours
-      T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
-    } else if (((maxT - meanT) / (maxT - minT)) < threshold) {
-      ## print('case 3.1.2')
-      ## temperature decreased throughout the 24 hours, probably.
-      ## assume triangle shape at 12:30
-      noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
-      for (tsi in 1:(n / 2)){
-        T[tsi] <- maxT - (maxT - noonT) * (mt[tsi] - 0.5) / 11.5
-      }
-      for (tsi in (n / 2 + 1):n) {
-        T[tsi] <- noonT - (noonT - minT) * (mt[tsi] - 12) / 11.5
-      }
-      ## adjustment at the middle 12 hours
-      T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
-    } else {
+    sunupi <- min(which(intensity > 0))
+    timestart <- 0 # hour
+    timeminT <- 0.5 + 24 / n * (sunupi - 1) + 1
+    ## hour, an hour later first middle time
+    timemaxT <- 14 + 24 / n / 2
+    ## hour, the middle time after 14:00
+    mt <- seq(from = 24 / n / 2,
+              to = 24 - 24 / n / 2,
+              length.out = n)
+    if (abs(maxT - minTn) <= 0.5) {
       if (startT < minT) {
-        ## print('case 3.2.1')
-        startT <- minT
-        timeminT <- 5
-      } else if (startT > maxT) {
-        ## print('case 3.2.2')
-        startT <- maxT
-        timeminT <- 10
-      } else if ((((meanT - minT) / (maxT - minT)) < (threshold + 0.1)) &
-                 (((startT - maxT) / (maxT - minT)) < (threshold + 0.1))) {
-        ## print('case 3.2.3')
-        startT <- meanT
-        timeminT <- 5
-      } else if ((((maxT - meanT) / (maxT - minT)) < (threshold + 0.1)) &
-                 (((startT - minT) / (maxT - minT)) < (threshold + 0.1))) {
-        ## print('case 3.2.4')
-        startT <- meanT
-        timeminT <- 5
+        ## print('case 1.1')
+        ## temperature increased throughout the 24 hours, probably.
+        ## assume triangle shape at 12:30
+        noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
+        for (tsi in 1:(n / 2)){
+          T[tsi] <- minT + (noonT - minT) * (mt[tsi] - 1) / 11.5
+        }
+        for (tsi in (n / 2 + 1):n) {
+          T[tsi] <- noonT + (maxT - noonT) * (mt[tsi] - 12.5) / 11.5
+        }
+        ## adjustment at the middle 12 hours
+        T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
       } else {
-        ## print('case 3.2.5')
-        ## the most ordinary case, down, up and down
+        ## print('case 1.2')
+        ## temperature goes down first and then up (end increasing)
+        tsl1 <- mt <= timeminT
+        tsii1 <- c(1:n)[tsl1]
+        for (tsi in tsii1) {
+          T[tsi] <- startT + (startT - minT) * sin(pi / 4) / (1 - sin(pi / 4)) -
+            sin(mt[tsi] / timeminT * (pi / 4) + pi / 4) *
+              (startT - minT) / (1 - sin(pi / 4))
+        }
+        rest <- meanT * n - sum(T)
+        ## let x be noonT (unknown) minus minT
+        ## then fx(time), gx(time) are scaling functions s.t.
+        ## fx * x + gx * (maxT - x - minT) +  minT = T
+        fx <- numeric()
+        gx <- numeric()
+        for (tsi in tsii1) {
+          ## zero because it's already taken into account befor calculating rest
+          fx[tsi] <- 0
+          gx[tsi] <- 0
+        }
+        tsl2 <- (!tsl1) & (mt < 12)
+        tsii2 <- c(1:n)[tsl2]
+        for (tsi in tsii2) {
+          fx[tsi] <- 1 +
+            sin((mt[tsi] - timeminT) / (12 - timeminT) * pi / 2 - pi / 2)
+          gx[tsi] <- 0
+        }
+        tsl3 <- (!tsl1) & (!tsl2)
+        tsii3 <- c(1:n)[tsl3]
+        for (tsi in tsii3) {
+          fx[tsi] <- 1
+          gx[tsi] <- (mt[tsi] - 12) / 11.5
+        }
+        ## now
+        ## sum(fx) * x + sum(gx) * (maxT - x - minT) + minT * sum(tsl2 | tsl3)
+        ##  == rest
+        x <- (rest - minT * sum(tsl2 | tsl3) - sum(gx) * (maxT - minT)) /
+          (sum(fx) - sum(gx))
+        for (tsi in tsii2) {
+          T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
+        }
+        for (tsi in tsii3) {
+          T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
+        }
       }
-      tsl1 <- mt <= timeminT
-      tsii1 <- c(1:n)[tsl1]
-      for (tsi in tsii1) {
-        T[tsi] <- startT + (startT - minT) * sin(pi / 4) / (1 - sin(pi / 4)) -
-          sin(mt[tsi] / timeminT * (pi / 4) + pi / 4) *
-            (startT - minT) / (1 - sin(pi / 4))
-      }
-      tsl2 <- (!tsl1) & (mt <= timemaxT)
-      tsii2 <- c(1:n)[tsl2]
-      for (tsi in tsii2) {
-        T[tsi] <-
-          (minT + maxT) / 2 +
-            sin((mt[tsi] - timeminT) / (timemaxT - timeminT) * pi - pi / 2) *
-              (maxT - minT) / 2
-      }
-      
-      tsl3 <- !(tsl1 | tsl2)
-      tsii3 <- c(1:n)[tsl3]
-      ## calculate the rest of the temperature sum
-      rest <- meanT * n - sum(T)
-      if (rest < 0) {
-        stop("")
-      }
-      ## !!! check that the min stays minimum and max stays max
-      ## calculate how to distribute the rest
-      frac <- rep(0, length = 24) # this would be the fraction above the endT
-      for (tsi in tsii3) {
-        frac[tsi] <- sin((mt[tsi] - timemaxT) / (24 - timemaxT) * (pi * 3 / 4) +
+    } else if (abs(minT - maxTn) <= 0.5) {
+      if (startT > maxT) {
+        ## print('case 2.1')
+        ## temperature decreased throughout the 24 hours, probably.
+        ## assume triangle shape at 12:30
+        noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
+        for (tsi in 1:(n / 2)){
+          T[tsi] <- maxT - (maxT - noonT) * (mt[tsi] - 0.5) / 11.5
+        }
+        for (tsi in (n / 2 + 1):n) {
+          T[tsi] <- noonT - (noonT - minT) * (mt[tsi] - 12) / 11.5
+        }
+        ## adjustment at the middle 12 hours
+        T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
+      } else {
+        ## print('case 2.2')
+        ## temperature goes up first and then down (and decreasing)
+        ## assume timemaxT at 10:00 (need to make room to adjust in the afternoon)
+        timemaxT <- 10
+        tsl1 <- mt <= timemaxT
+        tsii1 <- c(1:n)[tsl1]
+        for (tsi in tsii1) {
+          T[tsi] <- startT + (maxT - startT) *
+            sin((mt[tsi] / timemaxT) * (pi / 2))
+        }
+        rest <- meanT * n - sum(T)
+        ## let x be T at 18:00 (unknown) minus minT
+        ## then fx(time), gx(time) are scaling functions s.t.
+        ## fx * x + gx * (maxT - x - minT) +  minT = T
+        fx <- numeric()
+        gx <- numeric()
+        for (tsi in tsii1) {
+          ## zero because it's already taken into account befor calculating rest
+          fx[tsi] <- 0
+          gx[tsi] <- 0
+        }
+        tsl2 <- (!tsl1) & (mt < 18)
+        tsii2 <- c(1:n)[tsl2]
+        for (tsi in tsii2) {
+          fx[tsi] <- 1 
+          gx[tsi] <- sin((mt[tsi] - timemaxT) / (18 - timemaxT) * (pi / 2) +
                          pi / 2)
+        }
+        tsl3 <- (!tsl1) & (!tsl2)
+        tsii3 <- c(1:n)[tsl3]
+        for (tsi in tsii3) {
+          fx[tsi] <- 1 - (mt[tsi] - 18) / 5.5
+          gx[tsi] <- 0
+        }
+        ## now
+        ## sum(fx) * x + sum(gx) * (maxT - x - minT) + minT * sum(tsl2 | tsl3)
+        ##  == rest
+        x <- (rest - minT * sum(tsl2 | tsl3) - sum(gx) * (maxT - minT)) /
+          (sum(fx) - sum(gx))
+        for (tsi in tsii2) {
+          T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
+        }
+        for (tsi in tsii3) {
+          T[tsi] <- fx[tsi] * x + gx[tsi] * (maxT - x - minT) + minT
+        }
       }
-      endT <- (rest - maxT * sum(frac)) / (sum(tsl3) - sum(frac))
-      for (tsi in tsii3) {
-        T[tsi] <- endT + (maxT - endT) * frac[tsi]
+    } else {
+      if (((meanT - minT) / (maxT - minT)) < threshold) {
+        ## print('case 3.1.1')
+        ## temperature increased throughout the 24 hours, probably.
+        ## assume triangle shape at 12:30
+        noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
+        for (tsi in 1:(n / 2)){
+          T[tsi] <- minT + (noonT - minT) * (mt[tsi] - 1) / 11.5
+        }
+        for (tsi in (n / 2 + 1):n) {
+          T[tsi] <- noonT + (maxT - noonT) * (mt[tsi] - 12.5) / 11.5
+        }
+        ## adjustment at the middle 12 hours
+        T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
+      } else if (((maxT - meanT) / (maxT - minT)) < threshold) {
+        ## print('case 3.1.2')
+        ## temperature decreased throughout the 24 hours, probably.
+        ## assume triangle shape at 12:30
+        noonT <- 2 * meanT - 0.5 * minT - 0.5 * maxT
+        for (tsi in 1:(n / 2)){
+          T[tsi] <- maxT - (maxT - noonT) * (mt[tsi] - 0.5) / 11.5
+        }
+        for (tsi in (n / 2 + 1):n) {
+          T[tsi] <- noonT - (noonT - minT) * (mt[tsi] - 12) / 11.5
+        }
+        ## adjustment at the middle 12 hours
+        T[7:18] <- T[7:18] - (sum(T) - meanT * n) / 12
+      } else {
+        if (startT < minT) {
+          ## print('case 3.2.1')
+          startT <- minT
+          timeminT <- 5
+        } else if (startT > maxT) {
+          ## print('case 3.2.2')
+          startT <- maxT
+          timeminT <- 10
+        } else if ((((meanT - minT) / (maxT - minT)) < (threshold + 0.1)) &
+                   (((startT - maxT) / (maxT - minT)) < (threshold + 0.1))) {
+          ## print('case 3.2.3')
+          startT <- meanT
+          timeminT <- 5
+        } else if ((((maxT - meanT) / (maxT - minT)) < (threshold + 0.1)) &
+                   (((startT - minT) / (maxT - minT)) < (threshold + 0.1))) {
+          ## print('case 3.2.4')
+          startT <- meanT
+          timeminT <- 5
+        } else {
+          ## print('case 3.2.5')
+          ## the most ordinary case, down, up and down
+        }
+        tsl1 <- mt <= timeminT
+        tsii1 <- c(1:n)[tsl1]
+        for (tsi in tsii1) {
+          T[tsi] <- startT + (startT - minT) * sin(pi / 4) / (1 - sin(pi / 4)) -
+            sin(mt[tsi] / timeminT * (pi / 4) + pi / 4) *
+              (startT - minT) / (1 - sin(pi / 4))
+        }
+        tsl2 <- (!tsl1) & (mt <= timemaxT)
+        tsii2 <- c(1:n)[tsl2]
+        for (tsi in tsii2) {
+          T[tsi] <-
+            (minT + maxT) / 2 +
+              sin((mt[tsi] - timeminT) / (timemaxT - timeminT) * pi - pi / 2) *
+                (maxT - minT) / 2
+        }
+        
+        tsl3 <- !(tsl1 | tsl2)
+        tsii3 <- c(1:n)[tsl3]
+        ## calculate the rest of the temperature sum
+        rest <- meanT * n - sum(T)
+        if (rest < 0) {
+          stop("")
+        }
+        ## !!! check that the min stays minimum and max stays max
+        ## calculate how to distribute the rest
+        frac <- rep(0, length = 24) # this would be the fraction above the endT
+        for (tsi in tsii3) {
+          frac[tsi] <- sin((mt[tsi] - timemaxT) / (24 - timemaxT) * (pi * 3 / 4) +
+                           pi / 2)
+        }
+        endT <- (rest - maxT * sum(frac)) / (sum(tsl3) - sum(frac))
+        for (tsi in tsii3) {
+          T[tsi] <- endT + (maxT - endT) * frac[tsi]
+        }
       }
     }
-  }
-  ## last check
-  allowance <- 2
-  if (T[n] < (minT - allowance)) {
-    Tnew <- ifelse(T < minT, minT, T)
-    sumdiff <- sum(Tnew) - sum(T)
-    Tnew[7:18] <- Tnew[7:18] - c(0.02, 0.03, 0.06, 0.09, 0.13, 0.17,
-                                 0.17, 0.13, 0.09, 0.06, 0.03, 0.02) * sumdiff
-    Told <- T
-    T <- Tnew
-  } else if (T[n] > (maxT + allowance)) {
-    Tnew <- ifelse(T > maxT, maxT, T)
-    sumdiff <- sum(T) - sum(Tnew)
-    Tnew[7:18] <- Tnew[7:18] + c(0.02, 0.03, 0.06, 0.09, 0.13, 0.17,
-                                 0.17, 0.13, 0.09, 0.06, 0.03, 0.02) * sumdiff
-    T <- Tnew
+    ## last check
+    allowance <- 2
+    if (T[n] < (minT - allowance)) {
+      Tnew <- ifelse(T < minT, minT, T)
+      sumdiff <- sum(Tnew) - sum(T)
+      Tnew[7:18] <- Tnew[7:18] - c(0.02, 0.03, 0.06, 0.09, 0.13, 0.17,
+                                   0.17, 0.13, 0.09, 0.06, 0.03, 0.02) * sumdiff
+      Told <- T
+      T <- Tnew
+    } else if (T[n] > (maxT + allowance)) {
+      Tnew <- ifelse(T > maxT, maxT, T)
+      sumdiff <- sum(T) - sum(Tnew)
+      Tnew[7:18] <- Tnew[7:18] + c(0.02, 0.03, 0.06, 0.09, 0.13, 0.17,
+                                   0.17, 0.13, 0.09, 0.06, 0.03, 0.02) * sumdiff
+      T <- Tnew
+    }
   }
   return(T)
 }
