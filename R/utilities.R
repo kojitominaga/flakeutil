@@ -128,6 +128,10 @@ FractionalRadiation <- function(d, lat, lon, n = 24) {
                      length.out = n)
   intensity <- sin(pmax(sunAngle(middletimes, lat, lon)[['altitude']], 0)
                    / 180 * pi)
+  ## below fixes for the polar winter without sun
+  if (sum(intensity) == 0) {
+    intensity <- rep(1 / length(intensity), times = length(intensity))
+  }
   fraction <- intensity / sum(intensity)
   return(fraction)
 }
