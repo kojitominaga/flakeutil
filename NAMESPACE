@@ -5,6 +5,7 @@ export(fullnames,
        TemperatureAtDepths,
        HourlyAirTemperature,
        LAIndices
+       hurr2hurs
        )
 
 
