@@ -4,7 +4,7 @@ export(fullnames,
        TemperatureAtDepth,
        TemperatureAtDepths,
        HourlyAirTemperature,
-       LAIndices
+       LAIndices,
        hurr2hurs
        )
 
