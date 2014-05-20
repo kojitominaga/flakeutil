@@ -522,6 +522,10 @@ hurr2hurs <- function(hurr, ta, ps) {
   ## ps, air pressure, Pa (internally converted to hPa)
   
   ## http://www.cactus2000.de/js/calchum.pdf
+
+  if ((length(hurr) != length(ta)) | (length(ta) != length(ps)) ) {
+    stop('vectors not the same length')
+  }
   
   ## Lowe, P.R. and J.M. Ficke, 1974:
   ## The computation of saturation vapor pressure.
