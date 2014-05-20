@@ -516,3 +516,54 @@ LAIndices <- function(flakeresult, parameters, bthA, bthD) {
 }
   
 
+hurr2hurs <- function(hurr, ta, ps) {
+  ## hurr, relative humidity, per cent
+  ## ta, air temperatgure, height ??, K (internally converted to C)
+  ## ps, air pressure, Pa (internally converted to hPa)
+  
+  ## http://www.cactus2000.de/js/calchum.pdf
+  
+  ## Lowe, P.R. and J.M. Ficke, 1974:
+  ## The computation of saturation vapor pressure.
+  ## Tech. Paper No. 4-74, Environmental Prediction Research Facility,
+  ## Naval Postgraduate School, Monterey, CA, 27 pp.
+  a.water <- c(6.107799961,
+               4.436518521e-1,
+               1.428945805e-2,
+               2.650648471e-4,
+               3.031240396e-6,
+               2.034080948e-8,
+               6.136820929e-11)
+  a.ice <- c(6.109177956,
+             5.034698970e-1,
+             1.886013408e-2,
+             4.176223716e-4,
+             5.824720280e-6,
+             4.838803174e-8,
+             1.838826904e-10)
+  
+  MH2O <- 18.01534 ## molar mass of water, g mol-1
+  Mdry <- 28.9644 ## molar mass of dry air, g mol-1
+  
+  tc <- ta - 273.15 ## ta, degree C
+  e.water <- a.water[1] + tc *
+    (a.water[2] + tc *
+     (a.water[3] + tc *
+      (a.water[4] + tc *
+       (a.water[5] + tc *
+        (a.water[6] + tc * a.water[7])))))
+  e.ice <- a.ice[1] + tc *
+    (a.ice[2] + tc *
+     (a.ice[3] + tc *
+      (a.ice[4] + tc *
+       (a.ice[5] + tc *
+        (a.ice[6] + tc * a.ice[7])))))
+  e <- pmin(e.water, e.ice) ## varour pressure of water, hPa
+  PH2O <- (hurr / 100) * e ## partial pressure of water, hPa
+  xH2O <- PH2O / (ps / 100) ## volume mixing ratio, hPa / (Pa -> hPa)
+  mass <- xH2O * MH2O
+  q <- ## specifc humidity hurs, kg kg-1
+    mass / (mass + (1 - xH2O) * Mdry)
+  return(q)
+}
+
