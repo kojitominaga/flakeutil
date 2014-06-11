@@ -24,8 +24,7 @@ PlotSolarRadiation <- function(flakeresult) {
   par(bg = 'darkgray')
   plot(0, 0, type = 'n',
        xlim = range(x), ylim = range(c(Iatm, 0)),
-       xlab = 'time step', ylab = 'fate of incoming global radiation (W m-2)',
-       ...
+       xlab = 'time step', ylab = 'fate of incoming global radiation (W m-2)'
        )
   abline(h = 0, col = 'gray')
   l0 <- rep(0, times = nrow(flakeresult))
@@ -66,8 +65,7 @@ PlotSolarRadiation <- function(flakeresult) {
   plot(0, 0, type = 'n',
        xlim = range(x), ylim = c(0, 1.25),
        xlab = 'time step',
-       ylab = 'fate of incoming global radiation (fraction)',
-       ...
+       ylab = 'fate of incoming global radiation (fraction)'
        )
   abline(h = 0, col = 'gray')
   l0 <- rep(0, times = nrow(flakeresult))
