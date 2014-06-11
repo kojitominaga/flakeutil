@@ -188,22 +188,23 @@ TemperatureAtDepths <- function(flakeresult, parameters, z) {
                     2,
                     function(zi) z[zi] <= h
                     )
-  T <- apply(matrix(1:length(z), ncol = length(z)),
-             2,
-             function(zi) {
-               ifelse(is.in.ML[ , zi],
-                      Ts,
-                      zeta[ , zi] * (c1 * C - c2 + zeta[ , zi] *
-                                     (18 - 30 * C + zeta[ , zi] *
-                                      (20 * C - 12 + zeta[ , zi] *
-                                       (c3 - c4 * C)
+  Tz <- apply(matrix(1:length(z), ncol = length(z)),
+              2,
+              function(zi) {
+                ifelse(is.in.ML[ , zi],
+                       Ts,
+                       zeta[ , zi] * (c1 * C - c2 + zeta[ , zi] *
+                                      (18 - 30 * C + zeta[ , zi] *
+                                       (20 * C - 12 + zeta[ , zi] *
+                                        (c3 - c4 * C)
+                                        )
                                        )
-                                      )
-                                     ) *
-                      (Tb - Ts) + Ts
-                      )
-             }
-             )
+                                      ) *
+                       (Tb - Ts) + Ts
+                       )
+              }
+              )
+  return(Tz)
 }
                 
 HourlyAirTemperature <- function(d, lat, lon,
