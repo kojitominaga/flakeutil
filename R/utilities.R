@@ -156,12 +156,13 @@ TemperatureAtDepth <- function(flakeresult, parameters, z) {
   c3 <- 5 / 3
   c4 <- 10 / 3
   is.in.ML <- z <= h
-  T <- ifelse(is.in.ML,
-              Ts,
-              zeta * (c1 * C - c2 + zeta * (18 - 30 * C +
-                zeta * (20 * C - 12 + zeta * (c3 - c4 * C)))) *
-              (Tb - Ts) + Ts
-              )
+  Tz <- ifelse(is.in.ML,
+               Ts,
+               zeta * (c1 * C - c2 + zeta * (18 - 30 * C +
+                 zeta * (20 * C - 12 + zeta * (c3 - c4 * C)))) *
+               (Tb - Ts) + Ts
+               )
+  return(Tz)
 }
 
 TemperatureAtDepths <- function(flakeresult, parameters, z) {
